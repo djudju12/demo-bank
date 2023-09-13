@@ -56,7 +56,7 @@ func TestDeleteEntry(t *testing.T) {
 }
 
 func TestListEntry(t *testing.T) {
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 10; i++ {
 		createRandomEntry(t)
 	}
 

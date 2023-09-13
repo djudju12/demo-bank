@@ -45,7 +45,7 @@ func TestGetTransfer(t *testing.T) {
 }
 
 func TestListTransfer(t *testing.T) {
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 10; i++ {
 		createRandomTransfer(t)
 	}
 
