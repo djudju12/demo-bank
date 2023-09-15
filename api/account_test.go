@@ -174,21 +174,23 @@ func TestCreateAccount(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		// given
-		test := newTest(t, "/accounts")
-		tc.buildStubs(test.store)
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			test := newTest(t, "/accounts")
+			tc.buildStubs(test.store)
 
-		body, err := toReader(tc.request)
-		require.NoError(t, err)
+			body, err := toReader(tc.request)
+			require.NoError(t, err)
 
-		request, err := http.NewRequest(http.MethodPost, test.url, body)
-		require.NoError(t, err)
+			request, err := http.NewRequest(http.MethodPost, test.url, body)
+			require.NoError(t, err)
 
-		// when
-		test.server.router.ServeHTTP(test.recorder, request)
+			// when
+			test.server.router.ServeHTTP(test.recorder, request)
 
-		// then
-		tc.checkResponse(t, test.recorder)
+			// then
+			tc.checkResponse(t, test.recorder)
+		})
 	}
 }
 
@@ -260,18 +262,20 @@ func TestDeleteAccount(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		// given
-		test := newTest(t, fmt.Sprintf("/accounts/%d", tc.accountID))
-		tc.buildStubs(test.store)
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			test := newTest(t, fmt.Sprintf("/accounts/%d", tc.accountID))
+			tc.buildStubs(test.store)
 
-		request, err := http.NewRequest(http.MethodDelete, test.url, nil)
-		require.NoError(t, err)
+			request, err := http.NewRequest(http.MethodDelete, test.url, nil)
+			require.NoError(t, err)
 
-		// when
-		test.server.router.ServeHTTP(test.recorder, request)
+			// when
+			test.server.router.ServeHTTP(test.recorder, request)
 
-		//then
-		tc.checkResponse(t, test.recorder)
+			//then
+			tc.checkResponse(t, test.recorder)
+		})
 	}
 }
 
@@ -360,21 +364,23 @@ func TestUpdateAccount(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		// given
-		test := newTest(t, "/accounts")
-		tc.buildStubs(test.store)
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			test := newTest(t, "/accounts")
+			tc.buildStubs(test.store)
 
-		body, err := toReader(tc.request)
-		require.NoError(t, err)
+			body, err := toReader(tc.request)
+			require.NoError(t, err)
 
-		request, err := http.NewRequest(http.MethodPut, test.url, body)
-		require.NoError(t, err)
+			request, err := http.NewRequest(http.MethodPut, test.url, body)
+			require.NoError(t, err)
 
-		// when
-		test.server.router.ServeHTTP(test.recorder, request)
+			// when
+			test.server.router.ServeHTTP(test.recorder, request)
 
-		//then
-		tc.checkResponse(t, test.recorder)
+			//then
+			tc.checkResponse(t, test.recorder)
+		})
 	}
 }
 
@@ -449,22 +455,24 @@ func TestListAccount(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		// given
-		url := fmt.Sprintf("/accounts?page_id=%d&page_size=%d",
-			tc.request.PageID,
-			tc.request.PageSize)
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			url := fmt.Sprintf("/accounts?page_id=%d&page_size=%d",
+				tc.request.PageID,
+				tc.request.PageSize)
 
-		test := newTest(t, url)
-		tc.buildStubs(test.store)
+			test := newTest(t, url)
+			tc.buildStubs(test.store)
 
-		request, err := http.NewRequest(http.MethodGet, test.url, nil)
-		require.NoError(t, err)
+			request, err := http.NewRequest(http.MethodGet, test.url, nil)
+			require.NoError(t, err)
 
-		// when
-		test.server.router.ServeHTTP(test.recorder, request)
+			// when
+			test.server.router.ServeHTTP(test.recorder, request)
 
-		//then
-		tc.checkResponse(t, test.recorder)
+			//then
+			tc.checkResponse(t, test.recorder)
+		})
 	}
 }
 

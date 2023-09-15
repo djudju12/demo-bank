@@ -7,7 +7,6 @@ import (
 
 	mockdb "github.com/aulas/demo-bank/db/mock"
 	db "github.com/aulas/demo-bank/db/sqlc"
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
@@ -21,14 +20,14 @@ func TestCreateTransfer(t *testing.T) {
 
 	testCases := []struct {
 		baseTestCase //
-		request      gin.H
+		request      transferRequest
 	}{
 		{
-			request: gin.H{
-				"from_account_id": acc1.ID,
-				"to_account_id":   acc2.ID,
-				"amount":          amount,
-				"currency":        acc1.Currency,
+			request: transferRequest{
+				FromAccountID: acc1.ID,
+				ToAccountID:   acc2.ID,
+				Amount:        amount,
+				Currency:      acc1.Currency,
 			},
 			baseTestCase: baseTestCase{
 				name: "OK",
@@ -61,20 +60,22 @@ func TestCreateTransfer(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		// given
-		test := newTest(t, "/transfers")
-		tc.buildStubs(test.store)
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			test := newTest(t, "/transfers")
+			tc.buildStubs(test.store)
 
-		body, err := toReader(tc.request)
-		require.NoError(t, err)
+			body, err := toReader(tc.request)
+			require.NoError(t, err)
 
-		request, err := http.NewRequest(http.MethodPost, test.url, body)
-		require.NoError(t, err)
+			request, err := http.NewRequest(http.MethodPost, test.url, body)
+			require.NoError(t, err)
 
-		// when
-		test.server.router.ServeHTTP(test.recorder, request)
+			// when
+			test.server.router.ServeHTTP(test.recorder, request)
 
-		// then
-		tc.checkResponse(t, test.recorder)
+			// then
+			tc.checkResponse(t, test.recorder)
+		})
 	}
 }
