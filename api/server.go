@@ -30,6 +30,9 @@ func NewServer(store db.Store) *Server {
 	const transfersPath = "/transfers"
 	router.POST(path(transfersPath), server.createTransfer)
 
+	const usersPath = "/users"
+	router.POST(path(usersPath), server.createUser)
+
 	server.router = router
 	return server
 }

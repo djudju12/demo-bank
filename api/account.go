@@ -6,6 +6,7 @@ import (
 
 	db "github.com/aulas/demo-bank/db/sqlc"
 	"github.com/gin-gonic/gin"
+	"github.com/lib/pq"
 )
 
 type createAccountRequest struct {
@@ -28,6 +29,14 @@ func (s *Server) createAccount(ctx *gin.Context) {
 
 	account, err := s.store.CreateAccount(ctx, arg)
 	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok {
+			errName := pqErr.Code.Name()
+			if errName == "foreign_key_violation" || errName == "unique_violation" {
+				ctx.JSON(http.StatusForbidden, errorResponse(pqErr))
+				return
+			}
+		}
+
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
