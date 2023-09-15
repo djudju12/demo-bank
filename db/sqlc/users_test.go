@@ -30,7 +30,7 @@ func createRandomUser(t *testing.T) User {
 	require.Equal(t, arg.Email, user.Email)
 
 	require.NotZero(t, user.CreatedAt)
-	require.Zero(t, user.PasswordChangedAt)
+	require.True(t, user.PasswordChangedAt.IsZero())
 
 	return user
 }
