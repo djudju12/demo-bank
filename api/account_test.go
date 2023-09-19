@@ -46,7 +46,7 @@ func TestGetAccount(t *testing.T) {
 					requireBodyMatchAccount(t, recorder.Body, acc)
 				},
 			},
-		}, 
+		},
 		{
 			accountID: 0,
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
@@ -131,10 +131,14 @@ func TestCreateAccount(t *testing.T) {
 	testCases := []struct {
 		baseTestCase //
 		request      createAccountRequest
+		setupAuth    func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 	}{
 		{
 			request: createAccountRequest{
 				Currency: acc.Currency,
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuth(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
 			},
 			baseTestCase: baseTestCase{
 				name: "OK",
@@ -157,7 +161,10 @@ func TestCreateAccount(t *testing.T) {
 		},
 		{
 			request: createAccountRequest{
-				Currency: acc.Currency,
+				Currency: "invalid",
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuth(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
 			},
 			baseTestCase: baseTestCase{
 				name: "BadRequest",
@@ -174,6 +181,9 @@ func TestCreateAccount(t *testing.T) {
 		{
 			request: createAccountRequest{
 				Currency: acc.Currency,
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuth(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
 			},
 			baseTestCase: baseTestCase{
 				name: "InternalServerError",
@@ -203,6 +213,7 @@ func TestCreateAccount(t *testing.T) {
 			require.NoError(t, err)
 
 			// when
+			tc.setupAuth(t, request, test.server.tokenMaker)
 			test.server.router.ServeHTTP(test.recorder, request)
 
 			// then
@@ -217,9 +228,13 @@ func TestDeleteAccount(t *testing.T) {
 	testCases := []struct {
 		baseTestCase //
 		accountID    int64
+		setupAuth    func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 	}{
 		{
 			accountID: acc.ID,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuth(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			baseTestCase: baseTestCase{
 				name: "OK",
 				buildStubs: func(store *mockdb.MockStore) {
@@ -235,6 +250,9 @@ func TestDeleteAccount(t *testing.T) {
 		},
 		{
 			accountID: 0,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuth(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			baseTestCase: baseTestCase{
 				name: "BadRequest",
 				buildStubs: func(store *mockdb.MockStore) {
@@ -249,6 +267,9 @@ func TestDeleteAccount(t *testing.T) {
 		},
 		{
 			accountID: acc.ID,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuth(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			baseTestCase: baseTestCase{
 				name: "NotFound",
 				buildStubs: func(store *mockdb.MockStore) {
@@ -264,6 +285,9 @@ func TestDeleteAccount(t *testing.T) {
 		},
 		{
 			accountID: acc.ID,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuth(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			baseTestCase: baseTestCase{
 				name: "InternalServerError",
 				buildStubs: func(store *mockdb.MockStore) {
@@ -289,6 +313,7 @@ func TestDeleteAccount(t *testing.T) {
 			require.NoError(t, err)
 
 			// when
+			tc.setupAuth(t, request, test.server.tokenMaker)
 			test.server.router.ServeHTTP(test.recorder, request)
 
 			//then
@@ -304,11 +329,15 @@ func TestUpdateAccount(t *testing.T) {
 	testCases := []struct {
 		baseTestCase //
 		request      updateAccountRequest
+		setupAuth    func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 	}{
 		{
 			request: updateAccountRequest{
 				ID:      acc.ID,
 				Balance: acc.Balance,
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuth(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
 			},
 			baseTestCase: baseTestCase{
 				name: "OK",
@@ -333,6 +362,9 @@ func TestUpdateAccount(t *testing.T) {
 			request: updateAccountRequest{
 				Balance: acc.Balance,
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuth(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			baseTestCase: baseTestCase{
 				name: "BadRequest",
 				buildStubs: func(store *mockdb.MockStore) {
@@ -349,6 +381,9 @@ func TestUpdateAccount(t *testing.T) {
 			request: updateAccountRequest{
 				ID:      acc.ID,
 				Balance: acc.Balance,
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuth(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
 			},
 			baseTestCase: baseTestCase{
 				name: "NotFound",
@@ -367,6 +402,9 @@ func TestUpdateAccount(t *testing.T) {
 			request: updateAccountRequest{
 				ID:      acc.ID,
 				Balance: acc.Balance,
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuth(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
 			},
 			baseTestCase: baseTestCase{
 				name: "InternalServerError",
@@ -396,6 +434,7 @@ func TestUpdateAccount(t *testing.T) {
 			require.NoError(t, err)
 
 			// when
+			tc.setupAuth(t, request, test.server.tokenMaker)
 			test.server.router.ServeHTTP(test.recorder, request)
 
 			//then
@@ -417,11 +456,15 @@ func TestListAccount(t *testing.T) {
 	testCases := []struct {
 		baseTestCase //
 		request      listAccountRequest
+		setupAuth    func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 	}{
 		{
 			request: listAccountRequest{
 				PageID:   pageID,
 				PageSize: pageSize,
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuth(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
 			},
 			baseTestCase: baseTestCase{
 				name: "OK",
@@ -448,6 +491,9 @@ func TestListAccount(t *testing.T) {
 				PageID:   0,
 				PageSize: pageSize,
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuth(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			baseTestCase: baseTestCase{
 				name: "BadRequest",
 				buildStubs: func(store *mockdb.MockStore) {
@@ -464,6 +510,9 @@ func TestListAccount(t *testing.T) {
 			request: listAccountRequest{
 				PageID:   pageID,
 				PageSize: pageSize,
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuth(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
 			},
 			baseTestCase: baseTestCase{
 				name: "InternalServerError",
@@ -494,6 +543,7 @@ func TestListAccount(t *testing.T) {
 			require.NoError(t, err)
 
 			// when
+			tc.setupAuth(t, request, test.server.tokenMaker)
 			test.server.router.ServeHTTP(test.recorder, request)
 
 			//then

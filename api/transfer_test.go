@@ -4,9 +4,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	mockdb "github.com/aulas/demo-bank/db/mock"
 	db "github.com/aulas/demo-bank/db/sqlc"
+	"github.com/aulas/demo-bank/token"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
@@ -24,6 +26,7 @@ func TestCreateTransfer(t *testing.T) {
 	testCases := []struct {
 		baseTestCase //
 		request      transferRequest
+		setupAuth    func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 	}{
 		{
 			request: transferRequest{
@@ -31,6 +34,9 @@ func TestCreateTransfer(t *testing.T) {
 				ToAccountID:   acc2.ID,
 				Amount:        amount,
 				Currency:      acc1.Currency,
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuth(t, request, tokenMaker, authorizationTypeBearer, user1.Username, time.Minute)
 			},
 			baseTestCase: baseTestCase{
 				name: "OK",
@@ -75,6 +81,7 @@ func TestCreateTransfer(t *testing.T) {
 			require.NoError(t, err)
 
 			// when
+			tc.setupAuth(t, request, test.server.tokenMaker)
 			test.server.router.ServeHTTP(test.recorder, request)
 
 			// then
