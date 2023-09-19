@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	db "github.com/aulas/demo-bank/db/sqlc"
 	"github.com/aulas/demo-bank/token"
 	"github.com/aulas/demo-bank/util"
+	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
@@ -186,15 +188,74 @@ func TestCreateAccount(t *testing.T) {
 				addAuth(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
 			},
 			baseTestCase: baseTestCase{
-				name: "InternalServerError",
+				name: "foreign_key_violation",
 				buildStubs: func(store *mockdb.MockStore) {
 					store.EXPECT().
 						CreateAccount(gomock.Any(), gomock.Any()).
 						Times(1).
-						Return(db.Account{}, sql.ErrConnDone)
+						Return(db.Account{}, &pq.Error{Code: "23503"})
+				},
+				checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+					require.Equal(t, http.StatusForbidden, recorder.Code)
+				},
+			},
+		},
+		{
+			request: createAccountRequest{
+				Currency: acc.Currency,
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuth(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
+			baseTestCase: baseTestCase{
+				name: "unique_violation",
+				buildStubs: func(store *mockdb.MockStore) {
+					store.EXPECT().
+						CreateAccount(gomock.Any(), gomock.Any()).
+						Times(1).
+						Return(db.Account{}, &pq.Error{Code: "23505"})
+				},
+				checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+					require.Equal(t, http.StatusForbidden, recorder.Code)
+				},
+			},
+		},
+		{
+			request: createAccountRequest{
+				Currency: acc.Currency,
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuth(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
+			baseTestCase: baseTestCase{
+				name: "StatusInternalServerError",
+				buildStubs: func(store *mockdb.MockStore) {
+					store.EXPECT().
+						CreateAccount(gomock.Any(), gomock.Any()).
+						Times(1).
+						Return(db.Account{}, errors.New("some error"))
 				},
 				checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 					require.Equal(t, http.StatusInternalServerError, recorder.Code)
+				},
+			},
+		},
+		{
+			request: createAccountRequest{
+				Currency: acc.Currency,
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				// ...
+			},
+			baseTestCase: baseTestCase{
+				name: "Unauthorized",
+				buildStubs: func(store *mockdb.MockStore) {
+					store.EXPECT().
+						CreateAccount(gomock.Any(), gomock.Any()).
+						Times(0)
+				},
+				checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+					require.Equal(t, http.StatusUnauthorized, recorder.Code)
 				},
 			},
 		},
