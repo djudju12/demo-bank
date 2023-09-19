@@ -14,8 +14,11 @@ import (
 func TestCreateTransfer(t *testing.T) {
 	amount := int64(10)
 
-	acc1 := randomAccount()
-	acc2 := randomAccount()
+	user1, _ := randomUser(t)
+	user2, _ := randomUser(t)
+
+	acc1 := randomAccount(user1.Username)
+	acc2 := randomAccount(user2.Username)
 	acc2.Currency = acc1.Currency
 
 	testCases := []struct {

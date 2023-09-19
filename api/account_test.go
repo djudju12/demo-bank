@@ -9,22 +9,30 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	mockdb "github.com/aulas/demo-bank/db/mock"
 	db "github.com/aulas/demo-bank/db/sqlc"
+	"github.com/aulas/demo-bank/token"
 	"github.com/aulas/demo-bank/util"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
 func TestGetAccount(t *testing.T) {
-	acc := randomAccount()
+	user, _ := randomUser(t)
+	acc := randomAccount(user.Username)
+
 	testCase := []struct {
 		baseTestCase //
 		accountID    int64
+		setupAuth    func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 	}{
 		{
 			accountID: acc.ID,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuth(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			baseTestCase: baseTestCase{
 				name: "OK",
 				buildStubs: func(store *mockdb.MockStore) {
@@ -38,9 +46,12 @@ func TestGetAccount(t *testing.T) {
 					requireBodyMatchAccount(t, recorder.Body, acc)
 				},
 			},
-		},
+		}, 
 		{
 			accountID: 0,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuth(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			baseTestCase: baseTestCase{
 				name: "BadRequest",
 				buildStubs: func(store *mockdb.MockStore) {
@@ -55,6 +66,9 @@ func TestGetAccount(t *testing.T) {
 		},
 		{
 			accountID: acc.ID,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuth(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			baseTestCase: baseTestCase{
 				name: "NotFound",
 				buildStubs: func(store *mockdb.MockStore) {
@@ -70,6 +84,9 @@ func TestGetAccount(t *testing.T) {
 		},
 		{
 			accountID: acc.ID,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuth(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			baseTestCase: baseTestCase{
 				name: "InternalServerError",
 				buildStubs: func(store *mockdb.MockStore) {
@@ -95,6 +112,7 @@ func TestGetAccount(t *testing.T) {
 			require.NoError(t, err)
 
 			// when
+			tc.setupAuth(t, request, test.server.tokenMaker)
 			test.server.router.ServeHTTP(test.recorder, request)
 
 			// then
@@ -106,7 +124,8 @@ func TestGetAccount(t *testing.T) {
 }
 
 func TestCreateAccount(t *testing.T) {
-	acc := randomAccount()
+	user, _ := randomUser(t)
+	acc := randomAccount(user.Username)
 	acc.Balance = 0
 
 	testCases := []struct {
@@ -115,7 +134,6 @@ func TestCreateAccount(t *testing.T) {
 	}{
 		{
 			request: createAccountRequest{
-				Owner:    acc.Owner,
 				Currency: acc.Currency,
 			},
 			baseTestCase: baseTestCase{
@@ -155,7 +173,6 @@ func TestCreateAccount(t *testing.T) {
 		},
 		{
 			request: createAccountRequest{
-				Owner:    acc.Owner,
 				Currency: acc.Currency,
 			},
 			baseTestCase: baseTestCase{
@@ -195,7 +212,8 @@ func TestCreateAccount(t *testing.T) {
 }
 
 func TestDeleteAccount(t *testing.T) {
-	acc := randomAccount()
+	user, _ := randomUser(t)
+	acc := randomAccount(user.Username)
 	testCases := []struct {
 		baseTestCase //
 		accountID    int64
@@ -280,7 +298,9 @@ func TestDeleteAccount(t *testing.T) {
 }
 
 func TestUpdateAccount(t *testing.T) {
-	acc := randomAccount()
+	user, _ := randomUser(t)
+	acc := randomAccount(user.Username)
+
 	testCases := []struct {
 		baseTestCase //
 		request      updateAccountRequest
@@ -387,7 +407,12 @@ func TestUpdateAccount(t *testing.T) {
 func TestListAccount(t *testing.T) {
 	var pageSize int32 = 5
 	var pageID int32 = 1
-	accs := randomAccountList(pageSize)
+	user, _ := randomUser(t)
+
+	accs := make([]db.Account, pageSize)
+	for i := 0; i < int(pageSize); i++ {
+		accs[i] = randomAccount(user.Username)
+	}
 
 	testCases := []struct {
 		baseTestCase //
@@ -402,6 +427,7 @@ func TestListAccount(t *testing.T) {
 				name: "OK",
 				buildStubs: func(store *mockdb.MockStore) {
 					expectedArg := db.ListAccountParams{
+						Owner:  accs[0].Owner,
 						Limit:  pageSize,
 						Offset: (pageID - 1) * pageSize,
 					}
@@ -476,22 +502,13 @@ func TestListAccount(t *testing.T) {
 	}
 }
 
-func randomAccount() db.Account {
+func randomAccount(owner string) db.Account {
 	return db.Account{
 		ID:       util.RandomInt(1, 1000),
-		Owner:    util.RandomOnwer(),
+		Owner:    owner,
 		Balance:  util.RandomMoney(),
 		Currency: util.RandomCurrency(),
 	}
-}
-
-func randomAccountList(pageSize int32) []db.Account {
-	var result []db.Account
-	for i := 0; i < int(pageSize); i++ {
-		result = append(result, randomAccount())
-	}
-
-	return result
 }
 
 func requireBodyMatchAccountList(t *testing.T, body *bytes.Buffer, accs []db.Account) {
